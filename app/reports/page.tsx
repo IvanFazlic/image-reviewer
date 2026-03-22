@@ -4,10 +4,12 @@ import { useState, useEffect } from "react";
 
 interface Report {
   _id: string;
-  ratings: Record<string, { rating: string | null; comment: string }>;
+  type?: "review" | "services";
+  ratings?: Record<string, { rating: string | null; comment: string }>;
+  services?: string[];
   submittedAt: string;
-  totalImages: number;
-  reviewedCount: number;
+  totalImages?: number;
+  reviewedCount?: number;
   createdAt: string;
 }
 
@@ -51,6 +53,7 @@ export default function ReportsPage() {
   };
 
   const getStats = (report: Report) => {
+    if (!report.ratings) return { good: 0, bad: 0, off: 0, commented: 0 };
     const entries = Object.values(report.ratings);
     const good = entries.filter((e) => e.rating === "good").length;
     const bad = entries.filter((e) => e.rating === "bad").length;
@@ -102,6 +105,7 @@ export default function ReportsPage() {
         )}
 
         {reports.map((report) => {
+          const isServices = report.type === "services";
           const stats = getStats(report);
           const isExpanded = expanded === report._id;
           return (
@@ -116,24 +120,39 @@ export default function ReportsPage() {
                 }
               >
                 <div>
-                  <p className="font-medium">
-                    {new Date(report.submittedAt).toLocaleString()}
-                  </p>
+                  <div className="flex items-center gap-2">
+                    <p className="font-medium">
+                      {new Date(report.submittedAt).toLocaleString()}
+                    </p>
+                    <span
+                      className={`text-[10px] font-semibold uppercase px-2 py-0.5 rounded-full ${
+                        isServices
+                          ? "bg-purple-900/50 text-purple-300"
+                          : "bg-blue-900/50 text-blue-300"
+                      }`}
+                    >
+                      {isServices ? "Usluge" : "Review"}
+                    </span>
+                  </div>
                   <p className="text-sm text-zinc-500">
-                    {report.reviewedCount} / {report.totalImages} reviewed
+                    {isServices
+                      ? `${report.services?.length || 0} usluga označeno`
+                      : `${report.reviewedCount} / ${report.totalImages} reviewed`}
                   </p>
                 </div>
                 <div className="flex items-center gap-4">
-                  <div className="flex gap-3 text-xs">
-                    <span className="text-green-400">{stats.good} good</span>
-                    <span className="text-red-400">{stats.bad} bad</span>
-                    <span className="text-yellow-400">{stats.off} off</span>
-                    {stats.commented > 0 && (
-                      <span className="text-blue-400">
-                        {stats.commented} comments
-                      </span>
-                    )}
-                  </div>
+                  {!isServices && (
+                    <div className="flex gap-3 text-xs">
+                      <span className="text-green-400">{stats.good} good</span>
+                      <span className="text-red-400">{stats.bad} bad</span>
+                      <span className="text-yellow-400">{stats.off} off</span>
+                      {stats.commented > 0 && (
+                        <span className="text-blue-400">
+                          {stats.commented} comments
+                        </span>
+                      )}
+                    </div>
+                  )}
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
@@ -146,7 +165,23 @@ export default function ReportsPage() {
                 </div>
               </div>
 
-              {isExpanded && (
+              {isExpanded && isServices && (
+                <div className="border-t border-zinc-800 p-4 max-h-96 overflow-y-auto">
+                  <ul className="space-y-1">
+                    {report.services?.map((service) => (
+                      <li
+                        key={service}
+                        className="flex items-center gap-2 text-sm text-zinc-300"
+                      >
+                        <span className="text-blue-400">&#10003;</span>
+                        {service}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {isExpanded && !isServices && report.ratings && (
                 <div className="border-t border-zinc-800 p-4 max-h-96 overflow-y-auto">
                   <table className="w-full text-sm">
                     <thead>

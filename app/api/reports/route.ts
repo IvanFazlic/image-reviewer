@@ -4,19 +4,31 @@ import clientPromise from "@/lib/mongodb";
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { ratings, submittedAt, totalImages, reviewedCount } = body;
-
     const client = await clientPromise;
     const db = client.db("picker");
     const collection = db.collection("reports");
 
-    const result = await collection.insertOne({
-      ratings,
-      submittedAt,
-      totalImages,
-      reviewedCount,
-      createdAt: new Date(),
-    });
+    let doc;
+    if (body.type === "services") {
+      doc = {
+        type: "services",
+        services: body.services,
+        submittedAt: body.submittedAt,
+        createdAt: new Date(),
+      };
+    } else {
+      const { ratings, submittedAt, totalImages, reviewedCount } = body;
+      doc = {
+        type: "review",
+        ratings,
+        submittedAt,
+        totalImages,
+        reviewedCount,
+        createdAt: new Date(),
+      };
+    }
+
+    const result = await collection.insertOne(doc);
 
     return NextResponse.json({ success: true, id: result.insertedId });
   } catch (error) {
